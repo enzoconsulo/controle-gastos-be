@@ -52,12 +52,12 @@ async function pluggyCreateConnectToken({ apiKey, clientUserId, itemId }) {
   const r = await fetch("https://api.pluggy.ai/connect_token", {
     method: "POST",
     headers: {
-      "content-type": "application/json",
-      accept: "application/json",
-      Authorization: `Bearer ${apiKey}`,
+        "content-type": "application/json",
+        accept: "application/json",
+        "X-API-KEY": apiKey
     },
     body: JSON.stringify(payload),
-  });
+    });
   if (!r.ok) throw new Error(`Pluggy /connect_token falhou: ${r.status}`);
   return r.json();
 }
@@ -96,7 +96,7 @@ app.post("/connect-token", async (req, res) => {
     const { clientUserId, itemId } = req.body || {};
     const apiKey = await pluggyCreateApiKey(); // :contentReference[oaicite:4]{index=4}
     const tokenData = await pluggyCreateConnectToken({ apiKey, clientUserId, itemId }); // :contentReference[oaicite:5]{index=5}
-    res.json(tokenData); // contém connectToken
+    res.json({ connectToken: tokenData.accessToken || tokenData.connectToken });
   } catch (e) {
     res.status(500).json({ error: e.message || String(e) });
   }
