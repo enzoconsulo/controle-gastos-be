@@ -105,20 +105,30 @@ app.post("/connect-token", async (req, res) => {
 // Endpoint pra sincronizar transações (você manda itemId)
 app.post("/sync", async (req, res) => {
   try {
-    const { itemId } = req.body || {};
+    const { itemId, from, to } = req.body || {};
     if (!itemId) return res.status(400).json({ error: "Faltou itemId" });
 
     const apiKey = await pluggyCreateApiKey();
 
     // pega contas do item
-    const accounts = await pluggyListAccounts({ apiKey, itemId }); // :contentReference[oaicite:6]{index=6}
+    const accounts = await pluggyListAccounts({ apiKey, itemId });
 
-    // janela padrão: últimos 90 dias
-    const to = new Date();
-    const from = new Date();
-    from.setDate(from.getDate() - 90);
-    const fromStr = from.toISOString().slice(0, 10);
-    const toStr = to.toISOString().slice(0, 10);
+    // validação simples YYYY-MM-DD
+    const isISO = (s) => typeof s === "string" && /^\d{4}-\d{2}-\d{2}$/.test(s);
+
+    let fromStr, toStr;
+
+    if (isISO(from) && isISO(to) && from <= to) {
+      fromStr = from;
+      toStr = to;
+    } else {
+      // DEFAULT: últimos 1 dia
+      const toD = new Date();
+      const fromD = new Date();
+      fromD.setDate(fromD.getDate() - 1);
+      fromStr = fromD.toISOString().slice(0, 10);
+      toStr = toD.toISOString().slice(0, 10);
+    }
 
     const out = [];
 
@@ -128,17 +138,15 @@ app.post("/sync", async (req, res) => {
         accountId: acc.id,
         from: fromStr,
         to: toStr,
-      }); // :contentReference[oaicite:7]{index=7}
+      });
 
       for (const t of tx.results || []) {
-        // normalize pro seu front:
-        // amountSigned: +entrada / -saída
         const signed =
           t.type === "CREDIT" ? Number(t.amount || 0) : -Math.abs(Number(t.amount || 0));
 
         out.push({
           id: t.id,
-          date: (t.date || "").slice(0, 10), // ISO -> YYYY-MM-DD
+          date: (t.date || "").slice(0, 10),
           description: t.description || "",
           amountSigned: signed,
           accountName: acc.name || "Nubank",
