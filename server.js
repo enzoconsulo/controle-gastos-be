@@ -68,7 +68,7 @@ async function pluggyListAccounts({ apiKey, itemId }) {
   url.searchParams.set("itemId", itemId);
 
   const r = await fetch(url.toString(), {
-    headers: { accept: "application/json", Authorization: `Bearer ${apiKey}` },
+    headers: { accept: "application/json", "X-API-KEY": apiKey },
   });
   if (!r.ok) throw new Error(`Pluggy /accounts falhou: ${r.status}`);
   return r.json();
@@ -82,7 +82,7 @@ async function pluggyListTransactions({ apiKey, accountId, from, to }) {
   if (to) url.searchParams.set("to", to);
 
   const r = await fetch(url.toString(), {
-    headers: { accept: "application/json", Authorization: `Bearer ${apiKey}` },
+    headers: { accept: "application/json", "X-API-KEY": apiKey },
   });
   if (!r.ok) throw new Error(`Pluggy /transactions falhou: ${r.status}`);
   return r.json();
